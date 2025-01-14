@@ -5,7 +5,7 @@ date: "Initial version: 4/16/2021 Current version: `r format(Sys.Date(), '%d %Y'
 output: 
   html_document:
     toc: true
-    toc_depth: 5
+    toc_depth: 6
     number_sections: true
 bibliography: Antarctic_manuscript_citations_fixed.bib
 link-citations: true
@@ -43,6 +43,7 @@ library(reshape)
 library(gplots)
 library(ggrepel)
 library(flextable)
+library(philentropy)
 ```
 
 ## Introduction 
@@ -161,6 +162,14 @@ ggsave("ALL_abundance_BARplot.png", plot = Abundance_ggarrange_bar, path = "/Use
 
 ggsave("ALL_abundance_BARplot.pdf", plot = Abundance_ggarrange_bar, path = "/Users/christophercarnivale/Desktop/Dissertation_data/Antarctica_community_data/Manuscript_figures/")
 
+Abundance_ggarrange_bar_Wleg <- ggarrange(PNAN_plot_final_bar, MNAN_plot_final_bar, HNAN_plot_final_bar, Bact_abund_final_bar,  common.legend = TRUE, legend = "left", ncol = 2, nrow = 2, label.x = 0.95, label.y = 1.15, hjust = -0.1)
+
+Abundance_ggarrange_bar_Wleg
+
+ggsave("ALL_abundance_BARplot_Wleg.png", plot = Abundance_ggarrange_bar_Wleg, path = "/Users/christophercarnivale/Desktop/Dissertation_data/Antarctica_community_data/Manuscript_figures/")
+
+ggsave("ALL_abundance_BARplot_Wleg.pdf", plot = Abundance_ggarrange_bar_Wleg, path = "/Users/christophercarnivale/Desktop/Dissertation_data/Antarctica_community_data/Manuscript_figures/")
+
 #bacterivory plots
 MNAN_SS_perday_plot_final <- ggplot(filter(ant_community_final_calc, !station %in% c("N", "O","P","Q"), !depth == "Bucket"))+
   geom_boxplot(aes(x = station, y = MNAN_SS_perday, fill = depth))+ ylab("MNAN"~"bacterivory"~"day"^-1)+labs(fill = "Depth")+xlab("Station")
@@ -211,34 +220,33 @@ ggarrange(MNAN_SS_percent_perday_plot_final,HNAN_SS_percent_perday_plot_final, n
 ```
 
 ```{r initial visualization summary table}
-PNAN_mixo_percent <- ant_community_final_calc$MNAN_mL/ant_community_final_calc$ANAN_mL*100
+PNAN_mixo_percent <- ant_community_final_calc$MNAN_mL/ant_community_final_calc$PNAN_mL*100
 HNAN_mixo_percent <- ant_community_final_calc$MNAN_mL/(ant_community_final_calc$HNAN_mL+ant_community_final_calc$MNAN_mL)*100
-
-#mixo PNAN% 0-14%
+range(PNAN_mixo_percent)
+#mixo PNAN% 0-12%
 #mixo HNAN% 0-61%
 
 #grouped and removed station data
-#PNAN_mixo_percent_grp <- ant_community_final_calc_grp_remStations$MNAN_mL/ant_community_final_calc_grp_remStations$ANAN_mL*100
+#PNAN_mixo_percent_grp <- ant_community_final_calc_grp_remStations$MNAN_mL/ant_community_final_calc_grp_remStations$PNAN_mL*100
 #HNAN_mixo_percent_grp <- ant_community_final_calc_grp_remStations$MNAN_mL/(ant_community_final_calc_grp_remStations$HNAN_mL+ant_community_final_calc_grp_remStations$MNAN_mL)*100
 
-
-#mixo PNAN% 0-11%
+#range(PNAN_mixo_percent_grp)
+#mixo PNAN% 0-10%
 #mixo HNAN% 0-42%
 #mixo bacter% 0-30%
 
 #Now to build me a table
 
-mixo_percent_character_vector <- c("0 - 11", "0 - 42"," 0 - 30")
+mixo_percent_character_vector <- c("<1 - 10", "<1 - 42"," <1 - 30")
 mixo_percent_df <- t(as.data.frame(mixo_percent_character_vector))
 rownames(mixo_percent_df) <- NULL
-mixo_percent_colnames <- str_wrap(c("Phototrophic Nanoplankton PNAN (% mixotrophic)","Bacterivorous Nanoplankton HNAN (% mixotrophic", "Bacterial Standing Stock Removed by Mixotrophic Nanoplankton (% per day)"), width = 10)
+mixo_percent_colnames <- str_wrap(c("Phototrophic Nanoplankton PNAN (% mixotrophic)","Bacterivorous Nanoplankton HNAN (% mixotrophic)", "Bacterial Standing Stock Removed by Mixotrophic Nanoplankton (% per day)"), width = 10)
 ggtexttable(mixo_percent_df, cols = mixo_percent_colnames, theme = ttheme("minimal", 15)) %>% tab_add_hline(at.row = 1:2, row.side = "bottom", linewidth = 2) %>% tab_add_hline(at.row = 1:2, row.side = "bottom", linewidth = 2)
 
 #devtools::install_github("davidgohel/flextable")
 library(flextable)
 mixo_percent_df1 <- as.data.frame(mixo_percent_df)
 flextable(mixo_percent_df1)
-
 ```
 
 ```{r Final dataset PCA analysis ALL Reps}
@@ -949,13 +957,15 @@ env_prcomp_grp_remST_scores$Group <- ant_community_final_calc_env_grp_remST$Grou
 
 environmental_PCA_plot <- ggplot(data = env_prcomp_grp_remST_scores, aes(x = PC1, y = PC2))+
   geom_point(aes(color = Group, shape = depth))+
-  geom_segment(data = env_prcomp_grp_remST_species, aes(x = 0, y = 0, xend = PC1, yend = PC2), color = "black")+
+  geom_segment(data = env_prcomp_grp_remST_species, aes(x = 0, y = 0, xend = PC1, yend = PC2), color = "black",arrow = arrow(length = unit(0.1, "inches")))+
   geom_text_repel(data = env_prcomp_grp_remST_species, aes(x = PC1, y = PC2), label = rownames(env_prcomp_grp_remST_species), color = "black", fontface = "bold", size = 3)+
   geom_text_repel(aes(x = PC1, y = PC2+0.1), size = 3,label = rownames(env_prcomp_grp_remST_scores))+ labs(shape = "Depth") + xlab("PC1 (52.32%)") +ylab("PC2 (18.84%)")
 
 environmental_PCA_plot
 
 ggsave("environmental_PCA.png", plot = environmental_PCA_plot, path = "/Users/christophercarnivale/Desktop/Dissertation_data/Antarctica_community_data/Manuscript_figures/")
+
+ggsave("environmental_PCA.pdf", plot = environmental_PCA_plot, path = "/Users/christophercarnivale/Desktop/Dissertation_data/Antarctica_community_data/Manuscript_figures/")
 ```
 
 I have done all of the main analyses I can do on the functional patterns (PP, hetero, and whole community), as well as bacterivorous activity rates (% standing stock removed per day).
@@ -1002,7 +1012,7 @@ cor_p_matrix_melt <- melt(cor_p_matrix)
 ggplot(cor_matrix_melt, aes(X1,X2))+
   geom_tile(aes(fill = value))+scale_fill_gradient2()
 
-heatmap.2(cor_matrix, dendrogram = "none",col = redblue(200), trace = "none", tracecol = "black")
+#heatmap.2(cor_matrix, dendrogram = "none",col = redblue(200), trace = "none", tracecol = "black")
 
 #Correlation of important response variables to all other variables
 cor_matrix_melt_filter <- melt(cor_matrix[c("bprod", "Bact_mL","MNAN_SS_perday", "HNAN_SS_perday", "ANAN_mL", "PNAN_mL", "MNAN_mL", "HNAN_mL"),])
@@ -1386,10 +1396,12 @@ ant_community_final_PP_calc <- dplyr::mutate(ant_community_final_PP,
                                          Total_SS = MNAN_SS + HNAN_SS,
                                          MNAN_SS_percent = MNAN_SS/Total_SS*100,
                                          HNAN_SS_percent = HNAN_SS/Total_SS*100,
-                                         Total_act = mixo_act+mixo_maybe_act+phyto_act,
+                                         Total_act = mixo_act+mixo_maybe_act+phyto_act+hetero_act,
                                          mixo_act_percent = mixo_act/Total_act,
                                          mixo_maybe_act_percent = mixo_maybe_act/Total_act,
                                          phyto_act_percent = phyto_act/Total_act,
+                                         mixo_total_act_percent = (mixo_act+mixo_maybe_act)/Total_act,
+                                         hetero_act_percent = hetero_act/Total_act,
                                          Mixo_PP = Pprod_PAR_20*mixo_act_percent,
                                          Mixo_maybe_PP = Pprod_PAR_20*mixo_maybe_act_percent,
                                          Phyto_PP = Pprod_PAR_20*phyto_act_percent,
@@ -1458,12 +1470,12 @@ MNAN_PP_plot <- ggplot(filter(ant_community_final_PP_calc, !station %in% c("N", 
 MNAN_PP_potential_plot <- ggplot(filter(ant_community_final_PP_calc, !station %in% c("N", "O","P","Q","A"), !depth == "Bucket"))+
   geom_errorbar(aes(x = station, y = Mixo_PP_potential, ymin = Mixo_PP_potential - Mixo_PP_potential_sd, ymax = Mixo_PP_potential +  Mixo_PP_potential_sd, color = depth), position = position_dodge(0.1))+
   geom_point(aes(x = station, y = Mixo_PP_potential, color = depth))+ 
-  ylab("")+ xlab("")+ labs(linetype = "Depth", color = "Functional Group", shape = "Depth")+scale_color_manual(values = c("blue3","green4"))+theme_bw()
+  ylab("")+ xlab("")+ labs(linetype = "Depth", color = "Functional Group", shape = "Depth")+scale_color_manual(values = c("#CCCAD0","#809A89"))+theme_bw()
 
 PNAN_PP_plot <- ggplot(filter(ant_community_final_PP_calc, !station %in% c("N", "O","P","Q","A"), !depth == "Bucket"))+
   geom_errorbar(aes(x = station, y = Phyto_PP, ymin = Phyto_PP - Phyto_PP_sd, ymax = Phyto_PP +  Phyto_PP_sd, color = depth), position = position_dodge(0.1))+
   geom_point(aes(x = station, y = Phyto_PP, color = depth))+ 
-  ylab("")+ xlab("")+ labs(linetype = "Depth", color = "Functional Group", shape = "Depth")+scale_color_manual(values = c("blue3","green4"))+theme_bw()
+  ylab("")+ xlab("")+ labs(linetype = "Depth", color = "Functional Group", shape = "Depth")+scale_color_manual(values = c("#CCCAD0","#809A89"))+theme_bw()
 
 #filter(ant_community_final_PP_calc, !station %in% c("N", "O","P","Q","A"), !depth == "Bucket")
 # Quickly throw together a PCA analysis to see what's going on --------
@@ -1669,6 +1681,9 @@ ggplot(data = Primary_Production_abund_act_prcmp_scores, aes(x = PC1, y = PC2))+
 #I will then assume a diameter of the high and low range 0.2 and 0.5 um and assume everything is spherical for this first test - there are more complicated ways of doing this but I don't want to waste time if this proves to be fruitless. 
 #Calculation: bact_ml to bact_L then multiple by average bacterial volume = total biomass
 #cont: biomass * conversion factor of either 2.2 or 3.0 x 10^-13 (g/mL) to get *available* g C per liter per day
+
+# from Lee and Furhman 1987
+
 #cont: multiple available C by SS removal % to get C removed by MNAN and or HNAN
 #I can then normalize to a per cell basis by dividing by the number of cells for both PP and bacterivory for comparison there as well....we shall see what comes of this.
 
@@ -2261,10 +2276,14 @@ ggsave("ALL_activity_boxplot.pdf", plot = All_activity_ggarrange1, path = "/User
 
 MNAN_only_activity_ggarrange <- ggarrange(MNAN_C_removed_plot, MNAN_C_removed_percentRead_plot,MNAN_PP_potential_plot, ncol = 3, nrow = 1, common.legend = TRUE, legend = "bottom")
 
+MNAN_only_activity_ggarrange_noRead <- ggarrange(MNAN_C_removed_plot,MNAN_PP_potential_plot, ncol = 2, nrow = 1, common.legend = TRUE, legend = "bottom")
+
 HNAN_PNAN_activity_ggarrange <- ggarrange(HNAN_C_removed_plot, HNAN_C_removed_percentRead_plot,PNAN_PP_plot, nrow = 1, ncol = 3, common.legend = TRUE, legend = "bottom")
 #These both look good, just need to ggsave them for fixing illustrator
 
 ggsave("MNAN_only_activity_ggarrange.pdf", plot = MNAN_only_activity_ggarrange, path = "/Users/christophercarnivale/Desktop/Dissertation_data/Antarctica_community_data/Manuscript_figures/")
+
+ggsave("MNAN_only_activity_ggarrange_noRead.pdf", plot = MNAN_only_activity_ggarrange_noRead, path = "/Users/christophercarnivale/Desktop/Dissertation_data/Antarctica_community_data/Manuscript_figures/")
 
 ggsave("HNAN_PNAN_activity_ggarrange.pdf", plot = HNAN_PNAN_activity_ggarrange, path = "/Users/christophercarnivale/Desktop/Dissertation_data/Antarctica_community_data/Manuscript_figures/")
 
@@ -2276,6 +2295,8 @@ ggsave("Standing_stock_removed_ggarrange.pdf", plot = Standing_stock_removed_gga
 HNAN_activity_ggarrange <- ggarrange(HNAN_C_removed_plot, HNAN_C_removed_percentRead_plot, nrow = 1, ncol = 2, common.legend = TRUE, legend = "bottom")
 
 ggsave("HNAN_activity_ggarrange.pdf", plot = HNAN_activity_ggarrange, path = "/Users/christophercarnivale/Desktop/Dissertation_data/Antarctica_community_data/Manuscript_figures/")
+
+ggsave("HNAN_C_removed_plot.pdf", plot = HNAN_C_removed_plot, path = "/Users/christophercarnivale/Desktop/Dissertation_data/Antarctica_community_data/Manuscript_figures/")
 
 #PNAN ggsave
 ggsave("PNAN_PP_plot.pdf", plot = PNAN_PP_plot, path = "/Users/christophercarnivale/Desktop/Dissertation_data/Antarctica_community_data/Manuscript_figures/")
@@ -2313,7 +2334,12 @@ ggarrange(ALL_abundance_PCA_plot, Primary_Production_all_prcmp_plot, ALL_respons
 ```{r Mixo Percent Carbon from PP or hetero}
 #cbind(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA$station, ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA$Mixo_PP, ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA$MNAN_C_removed)
 
-Mixo_percent_carbon_PPandHeterodf <- select(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA, Group, depth,station, Mixo_PP, MNAN_C_removed)  %>% group_by(Group, station, depth)%>% summarise(Mixo_PP_avg = mean(Mixo_PP),
+#Just need to add in the new group into this df and I will be fine
+ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_new_grp <- ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA
+ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_new_grp$Group_final <- with(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA, ifelse(Group == "Maguerite", "South",
+                                                                                                            ifelse(Group != "Maguerite" & Group != "Offshore", "North", "Offshore")))
+
+Mixo_percent_carbon_PPandHeterodf <- select(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_new_grp, Group, Group_final, depth,station, Mixo_PP, MNAN_C_removed)  %>% group_by(Group_final, station, depth)%>% summarise(Mixo_PP_avg = mean(Mixo_PP),
                                                                                                                                                              Mixo_PP_sd = sd(Mixo_PP),
                                                                                                                                                              MNAN_C_removed_avg = mean(MNAN_C_removed),
                                                                                                                                                              MNAN_C_removed_sd = sd(MNAN_C_removed)) %>% mutate(Primary_Production_Percent = Mixo_PP_avg/(Mixo_PP_avg+MNAN_C_removed_avg)*100,
@@ -2339,8 +2365,42 @@ Mixo_percent_carbon_PPandHeterodf_noredun <- filter(Mixo_percent_carbon_PPandHet
 
 DCM_filter <- filter(Mixo_percent_carbon_PPandHeterodf_noredun, depth == "DCM")
 Surf_filter <- filter(Mixo_percent_carbon_PPandHeterodf_noredun, depth == "Surf")
-North_filter <- filter(Mixo_percent_carbon_PPandHeterodf_noredun, Group != "Maguerite")
-South_filter <- filter(Mixo_percent_carbon_PPandHeterodf_noredun, Group == "Maguerite")
+North_filter <- filter(Mixo_percent_carbon_PPandHeterodf_noredun, Group_final != "Maguerite" & Group_final != "Offshore")
+South_filter <- filter(Mixo_percent_carbon_PPandHeterodf_noredun, Group_final == "Maguerite")
+Offshore_filter <- filter(Mixo_percent_carbon_PPandHeterodf_noredun, Group_final == "Offshore")
+
+#For bacterivory
+mean(North_filter$Bacterivory_Percent)
+sd(North_filter$Bacterivory_Percent)
+
+mean(South_filter$Bacterivory_Percent)
+sd(South_filter$Bacterivory_Percent)
+
+mean(Offshore_filter$Bacterivory_Percent)
+sd(Offshore_filter$Bacterivory_Percent)
+
+#For Primary Production
+mean(North_filter$Primary_Production_Percent)
+sd(North_filter$Primary_Production_Percent)
+
+mean(South_filter$Primary_Production_Percent)
+sd(South_filter$Primary_Production_Percent)
+
+mean(Offshore_filter$Primary_Production_Percent)
+sd(Offshore_filter$Primary_Production_Percent)
+
+# For DCM
+mean(DCM_filter$Primary_Production_Percent)
+sd(DCM_filter$Primary_Production_Percent)
+
+mean(DCM_filter$Bacterivory_Percent)
+sd(DCM_filter$Bacterivory_Percent)
+# For Surf
+mean(Surf_filter$Primary_Production_Percent)
+sd(Surf_filter$Primary_Production_Percent)
+
+mean(Surf_filter$Bacterivory_Percent)
+sd(Surf_filter$Bacterivory_Percent)
 ```
 
 ```{r Correlation matrix ggarrange, fix}
@@ -2394,7 +2454,7 @@ ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA$MNAN_C_PP_percell_pot[whi
 
 ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA$MNAN_C_PP_percell_pot[which(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA$MNAN_C_PP_percell_pot == "Inf")] <- 0
 
-ant_community_final_PP_calc_grp <- filter(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA, !station %in% c("N", "O","P","Q"), !depth == "Bucket") %>% group_by(Group, station, depth) %>% summarise_if(is.numeric, mean, rm.na = TRUE)
+ant_community_final_PP_calc_grp <- filter(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA, !station %in% c("N", "O","P","Q"), !depth == "Bucket") %>% group_by(Group, station, depth) %>% summarise_if(is.numeric, mean, na.rm = TRUE)
 
 rownames(ant_community_final_PP_calc_grp) <- grouped_rownames_remST
 
@@ -2664,6 +2724,10 @@ HNAN_percent_bprod_test_plot
 percent_bprod_ggarrange <- ggarrange(MNAN_percent_bprod_test_plot,MNAN_percent_bprod_test_PERCENTread_plot,HNAN_percent_bprod_test_plot,HNAN_percent_bprod_test_PERCENTread_plot, common.legend = TRUE, legend = "bottom")
 
 ggsave("percent_bprod_ggarrange.pdf", percent_bprod_ggarrange, path = "/Users/christophercarnivale/Desktop/Dissertation_data/Antarctica_community_data/Manuscript_figures/")
+
+percent_bprod_ggarrange_noRead <- ggarrange(MNAN_percent_bprod_test_plot,HNAN_percent_bprod_test_plot, common.legend = TRUE, legend = "bottom")
+
+ggsave("percent_bprod_ggarrange_noRead.pdf", percent_bprod_ggarrange_noRead, path = "/Users/christophercarnivale/Desktop/Dissertation_data/Antarctica_community_data/Manuscript_figures/")
 #Testing to make sure total carbon isn't being consumed by mixotrophs by including total C available in addition to the bacterial production.
 
 #Calculation: bact_ml to bact_L then multiple by average bacterial volume = total biomass
@@ -3121,7 +3185,7 @@ PC1 is the increase/decrease of total community abundance, which accounts for th
 ## What I have decided....
 The plots of PC1 and PC2 will be used as supplements as they explain most of the variance in the data. I will use the plots on PC2 and PC3 in the main plots as they look to distinguish the difference between the groups and this is what I want to emphasize. There's almost nothing significant when it comes to activity levels. There a few important vars when it comes: PAR, depth, water_temp, oxygen saturation. 
 
-```{r Filters for raw ranges and avgs of dif subgroups (lat/depth)}
+```{r Filters for raw ranges and avgs of dif subgroups (lat/depth) incl rRNA prop ALL SUMMARY}
 DCM_filter_all <- filter(ant_community_final_PP_calc_grp, depth == "DCM")
 Surf_filter_all <- filter(ant_community_final_PP_calc_grp, depth == "Surf")
 North_filter_all <- filter(ant_community_final_PP_calc_grp, Group != "Maguerite" | Group != "Offshore")
@@ -3140,14 +3204,20 @@ ant_community_final_PP_calc_grp_for_sum$Group_final <- with(ant_community_final_
 #bprod*24/1000000*1500
 ant_community_final_PP_calc_grp_for_sum$bprod <- ant_community_final_PP_calc_grp_for_sum$bprod*24/1000000*1500
 
+#Means and sd for each Group
 group_by(ant_community_final_PP_calc_grp_for_sum, Group_final) %>% summarise_if(is.numeric, .funs = list(mean = mean, sd = sd), na.rm = TRUE)
 
+#Means and sd for each group at Surface depth
 group_by(filter(ant_community_final_PP_calc_grp_for_sum, depth == "Surf"), Group_final) %>% summarise_if(is.numeric, .funs = list(mean = mean, sd = sd), na.rm = TRUE)
 
+#Means and sd for each group at DCM depth
 group_by(filter(ant_community_final_PP_calc_grp_for_sum, depth == "DCM"), Group_final) %>% summarise_if(is.numeric, .funs = list(mean = mean, sd = sd), na.rm = TRUE)
 
-
+#Means and sd for each station
 ant_community_final_PP_calc_grp_for_sum %>% summarise_if(is.numeric, .funs = list(mean = mean, sd = sd), na.rm = TRUE)
+
+#Means and sd for each depth
+group_by(ant_community_final_PP_calc_grp_for_sum, depth) %>% summarise_if(is.numeric, .funs = list(mean = mean, sd = sd), na.rm = TRUE)
 
 mean(ant_community_final_PP_calc_grp_for_sum$MNAN_SS_perday)
 sd(ant_community_final_PP_calc_grp_for_sum$MNAN_SS_perday)
@@ -3161,7 +3231,6 @@ sd(ant_community_final_PP_calc_grp_for_sum$HNAN_SS_perday)
 mean(ant_community_final_PP_calc_grp_for_sum$Mixo_PP_potential)
 sd(ant_community_final_PP_calc_grp_for_sum$HNAN_C_removed)
 
-
 mean(filter(ant_community_final_PP_calc_grp_for_sum, depth == "Surf")$Phyto_PP, na.rm = TRUE)
 sd(filter(ant_community_final_PP_calc_grp_for_sum, depth == "Surf")$Phyto_PP, na.rm = TRUE)
 
@@ -3173,6 +3242,13 @@ sd(filter(ant_community_final_PP_calc_grp_for_sum, depth == "Surf")$Mixo_PP_pote
 
 mean(filter(ant_community_final_PP_calc_grp_for_sum, depth == "DCM")$Mixo_PP_potential, na.rm = TRUE)
 sd(filter(ant_community_final_PP_calc_grp_for_sum, depth == "DCM")$Mixo_PP_potential, na.rm = TRUE)
+
+mean(ant_community_final_PP_calc_grp_for_sum$hetero_act_percent)
+sd(ant_community_final_PP_calc_grp_for_sum$hetero_act_percent)
+mean(ant_community_final_PP_calc_grp_for_sum$mixo_total_act_percent)
+sd(ant_community_final_PP_calc_grp_for_sum$mixo_total_act_percent)
+mean(ant_community_final_PP_calc_grp_for_sum$phyto_act_percent)
+sd(ant_community_final_PP_calc_grp_for_sum$phyto_act_percent)
 ```
 
 ```{r Making figures with Total Primary Production and bprod}
@@ -3198,17 +3274,22 @@ Total_PP_final_bar <- ggplot(filter(ant_community_final_PP_calc_grp_for_producti
 Total_PP_final_bar
 Bprod_final_bar
 
+#The Bar plots do not look as nice and do not convey the information as I would like. I am switching to point plots with error bars as they convery the information better.
+
+#Making/Saving final Total PP Supplemental Figure--------
 Total_PP_point_plot <- ggplot(filter(ant_community_final_PP_calc_grp_for_production_plots, !station %in% c("N", "O","P","Q","A"), depth == "Surf"))+
   geom_errorbar(aes(x = station, y = pprod_Sun, ymin = pprod_Sun - pprod_Sun_stdev, ymax = pprod_Sun +  pprod_Sun_stdev, color = depth), position = position_nudge(x = -0.225), width = 0.45)+
-  geom_point(aes(x = station, y = pprod_Sun, color = 'blue3'), position = position_nudge(-0.225))+
+  geom_point(aes(x = station, y = pprod_Sun, color = depth), position = position_nudge(-0.225))+
   geom_errorbar(data = filter(ant_community_final_PP_calc_grp_for_production_plots, !station %in% c("N", "O","P","Q","A"), depth == "DCM"),aes(x = station, y = pprod_Sun, ymin = pprod_Sun - pprod_Sun_stdev, ymax = pprod_Sun +  pprod_Sun_stdev, color = depth), position = position_nudge(x = 0.225), width = 0.45)+
-  geom_point(data = filter(ant_community_final_PP_calc_grp_for_production_plots, !station %in% c("N", "O","P","Q","A"), depth == "DCM"), aes(x = station, y = pprod_Sun, color = 'green4'), position = position_nudge(0.225))+ 
-  ylab("")+ xlab("")+ labs(linetype = "Depth", color = "Functional Group")+theme_bw()
+  geom_point(data = filter(ant_community_final_PP_calc_grp_for_production_plots, !station %in% c("N", "O","P","Q","A"), depth == "DCM"), aes(x = station, y = pprod_Sun, color = depth), position = position_nudge(0.225))+ 
+  ylab("")+ xlab("")+ labs(linetype = "Depth", color = "Functional Group")+scale_color_manual(values = c("green4","blue3"))+theme_bw()
+
+ggsave("Total_PP_point_plot.pdf", Total_PP_point_plot, path = "/Users/christophercarnivale/Desktop/Dissertation_data/Antarctica_community_data/Manuscript_figures/")
 
 Bprod_point_plot <- ggplot(filter(ant_community_final_PP_calc_grp_for_production_plots, !station %in% c("N", "O","P","Q","A"), !depth == "Bucket"))+
   geom_errorbar(aes(x = station, y = bprod, ymin = bprod - bprod_stdev, ymax = bprod +  bprod_stdev, color = depth), position = position_dodge(0.225))+
   geom_point(aes(x = station, y = bprod, color = depth), position = position_dodge(0.225))+ 
-  ylab("")+ xlab("")+ labs(linetype = "Depth", color = "Functional Group", shape = "Depth")+scale_color_manual(values = c("blue3","green4"))+theme_bw()
+  ylab("")+ xlab("Stations")+ labs(linetype = "Depth", color = "Functional Group", shape = "Depth")+scale_color_manual(values = c("blue3","green4"))+theme_bw()
 
 Total_bact_PP_ggarrange <- ggarrange(Total_PP_point_plot, Bprod_point_plot, legend = "none")
 
@@ -3216,7 +3297,23 @@ Total_bact_PP_ggarrange
 
 ggsave("Total_bact_PP_ggarrange.pdf", Total_bact_PP_ggarrange, path = "/Users/christophercarnivale/Desktop/Dissertation_data/Antarctica_community_data/Manuscript_figures/")
 
+#Figure for <20 µm PP-----------
+Less_20um_PP_point_plot <- ggplot(filter(ant_community_final_PP_calc_grp_for_production_plots, !station %in% c("N", "O","P","Q","A"), depth == "Surf"))+
+  geom_errorbar(aes(x = station, y = Pprod_PAR_20, ymin = Pprod_PAR_20 - Pprod_PAR_20_stdev, ymax = Pprod_PAR_20 +  Pprod_PAR_20_stdev, color = depth), position = position_nudge(x = -0.225), width = 0.45)+
+  geom_point(aes(x = station, y = Pprod_PAR_20, color = depth), position = position_nudge(-0.225))+
+  geom_errorbar(data = filter(ant_community_final_PP_calc_grp_for_production_plots, !station %in% c("N", "O","P","Q","A"), depth == "DCM"),aes(x = station, y = Pprod_PAR_20, ymin = Pprod_PAR_20 - Pprod_PAR_20_stdev, ymax = Pprod_PAR_20 +  Pprod_PAR_20_stdev, color = depth), position = position_nudge(x = 0.225), width = 0.45)+
+  geom_point(data = filter(ant_community_final_PP_calc_grp_for_production_plots, !station %in% c("N", "O","P","Q","A"), depth == "DCM"), aes(x = station, y = Pprod_PAR_20, color = depth), position = position_nudge(0.225))+ 
+  ylab("")+ xlab("Stations")+ labs(linetype = "Depth", color = "Functional Group")+scale_color_manual(values = c("green4","blue3"))+theme_bw()
+
+#Creating Final Figure 4 ----------
+Less_20um_bact_PP_ggarrange <- ggarrange(Less_20um_PP_point_plot, Bprod_point_plot, legend = "bottom", common.legend = TRUE)
+
+Less_20um_bact_PP_ggarrange
+#Saving figure
+ggsave("Less_20um_bact_PP_ggarrange.pdf", Less_20um_bact_PP_ggarrange, path = "/Users/christophercarnivale/Desktop/Dissertation_data/Antarctica_community_data/Manuscript_figures/")
+
 ```
+
 
 
 ```{r a new df for percent read est of abundance}
@@ -3259,6 +3356,13 @@ ggplot(ant_community_final_PP_calc_grp_perc_read_abund)+
 The pattens of the percent abundance generally, do not follow the overall trends of the abundance measures estimated via microscopy. Elevates the MNAN abundance to what we expect based on the amount of RNA reads esimated from JDs paper, however, it modifies the trends for HNAN abundance data. There was no latitudinal signal, where the %read estimates doubles the HNANs and creates a strong latitudinal signal. While this would be consistent with the bacterial production data, this is not what I observed and there is evidence of decoupling of abundance and activity metrics. I do not believe this analysis to be fruitful or worthwhile and not an accurate representation of the amount of HNANs or really any NAN functional group.
 
 If I provide new estimates for abundance based on %reads, do I then include estimates of environmental parameters for the new abundances? I need to think on this...
+
+The Percent read estimation for abundance were removed from consideration. Similar to the problems in estimating the bacterivory. It doesn't make sense to report the abundance from RNA estimates as there are lineage specific differences between copy numbers per cell. However, what I can do is provide an estimate of how much is potentially missed from the difference between the population estimates and the molecular percentage of the activity.
+
+```{r Estimation of MNANs missed}
+
+```
+
 
 #### Kolmgorov-Smirnov Test
 
@@ -3321,29 +3425,266 @@ Post normalization KS tests: the general trends switch. HNANs are no longer sign
 
 As additional tests, I will perform 2 additional distribution tests (Kullback-Leibler divergence test [distribution test] and Jaccard similarity coefficient[%similarity]) at the suggestion of JD (co-author). Last I will validate that the carbon estimates from each method make sense in the context of estimated abundance converted to carbon biomass. 
 
-Kullback-Leibler divergence test:
+I will start by creating new dfs with the HNAN and MNAN data for both the direct and indirect methods. I will create one with normalized and raw data like the KS tests but I may not need the normalized data...I need to more reading behind these distribution comparison tests.
+
+##### Kullback-Leibler divergence test:
+
+The KL test is a non-symmetric comparison of two distributions based on the entropy or rather cross entropy in information theory. It estimates the amount of information lost when applying distribution A while sampling from distribution B or P(A||B). This allows for quantification for the effect of information lost between methods.
 
 ```{r Kullback-Leibler divergence test}
+#Comparing the standardized distributions...making quick vectors of units for comparison
+#MNAN vectors
+#MNAN_C_removed_vector <- ant_community_final_PP_calc_grp$MNAN_C_removed
+#MNAN_C_removed_percentRead_vector <- ant_community_final_PP_calc_grp$mixo_act_feeding_redo
+#HNAN vectors
+#HNAN_C_removed_vector <- ant_community_final_PP_calc_grp$HNAN_C_removed
+#HNAN_C_removed_percentRead_vector <- ant_community_final_PP_calc_grp$hetero_act_feeding_C_redo
+
+#Creating df for MNAN and HNAN distribution comparison, first with raw data.
+MNAN_feeding_df <- rbind(MNAN_C_removed_vector,MNAN_C_removed_percentRead_vector)
+HNAN_feeding_df <- rbind(HNAN_C_removed_vector,HNAN_C_removed_percentRead_vector)
+
+KL(MNAN_feeding_df, unit = "log10", est.prob = "empirical")
+KL(HNAN_feeding_df, unit = "log10", est.prob = "empirical")
+#These 2 are the same and is a conversion between bits and nat units of entropy
+#Upon further reading, Nats are more commonly used in generalized statistics
+#and bits are used in computer science. I will report in terms of nats
+#KL(HNAN_feeding_df, unit = "log", est.prob = "empirical")*1.44
+#KL(HNAN_feeding_df, unit = "log2", est.prob = "empirical")
+
+#The KL test is also not a symmetric test. I need to think about which distribution I shoud comparing/simulating pulling information from. I want to be comparing the information in the indirect distribution and comparing to the direct (traditional) method. or P(indirect||direct)...this means I need to reverse the order of the rows I compared in the previous example.
+
+MNAN_feeding_df_rev <- rbind(MNAN_C_removed_percentRead_vector,MNAN_C_removed_vector)
+HNAN_feeding_df_rev <- rbind(HNAN_C_removed_percentRead_vector, HNAN_C_removed_vector)
+
+KL(MNAN_feeding_df_rev, unit = "log", est.prob = "empirical")
+KL(HNAN_feeding_df_rev, unit = "log", est.prob = "empirical")
+
+#Now with normalized version of the data
+#Now I need to normalize everything, subtract the mean and divide by the sd (zscore transformation)
+#Initial normalization doesn't work...I could min max scale to give "frequency data"
+
+#I actually don't need to normalize the data as the probabilitites are compared via log ratio and will be converted anyway. Using the raw data is better and no longer needed for comparison but I will leave this in to show I know how to transform the raw data into various forms.
+
+#MNAN_C_removed_vector_norm <- (MNAN_C_removed_vector-mean(MNAN_C_removed_vector))/sd(MNAN_C_removed_vector)
+#MNAN_C_removed_percentRead_vector_norm <- (MNAN_C_removed_percentRead_vector-mean(MNAN_C_removed_percentRead_vector))/sd(MNAN_C_removed_percentRead_vector)
+
+#HNAN_C_removed_vector_norm <- (HNAN_C_removed_vector-mean(HNAN_C_removed_vector))/sd(HNAN_C_removed_vector)
+#HNAN_C_removed_percentRead_vector_norm <- (HNAN_C_removed_percentRead_vector-mean(HNAN_C_removed_percentRead_vector))/sd(HNAN_C_removed_percentRead_vector)
+
+#Min-max scaling
+MNAN_C_removed_vector_norm_minmax <- (MNAN_C_removed_vector - min(MNAN_C_removed_vector)) / (max(MNAN_C_removed_vector)-min(MNAN_C_removed_vector))
+MNAN_C_removed_percentRead_vector_norm_minmax <- (MNAN_C_removed_percentRead_vector - min(MNAN_C_removed_percentRead_vector)) / (max(MNAN_C_removed_percentRead_vector)-min(MNAN_C_removed_percentRead_vector))
+
+HNAN_C_removed_vector_norm_minmax <- (HNAN_C_removed_vector - min(HNAN_C_removed_vector)) / (max(HNAN_C_removed_vector)-min(HNAN_C_removed_vector))
+HNAN_C_removed_percentRead_vector_norm_minmax <- (HNAN_C_removed_percentRead_vector - min(HNAN_C_removed_percentRead_vector)) / (max(HNAN_C_removed_percentRead_vector)-min(HNAN_C_removed_percentRead_vector))
+
+MNAN_feeding_norm_df <- rbind(MNAN_C_removed_vector_norm, MNAN_C_removed_percentRead_vector_norm)
+HNAN_feeding_norm_df <- rbind(HNAN_C_removed_vector_norm, HNAN_C_removed_percentRead_vector_norm)
+
+#KL(MNAN_feeding_norm_df, est.prob = "empirical")
+
+#KL(HNAN_feeding_norm_df, est.prob = "empirical")
+```
+
+###### KL Summary
+The base used for our pruposes is the log10 as the is a common transformation amongst ecological datasets. I need to research more on the scale and the interpretation of the scale. For now, as far as I know there is a < 1%  and 10% information lost when using the indirect method for the MNAN and HNAN bacterivory, respectively.
+
+However, the initial calculation is based upon the uncorrected raw data from the first iteration of the method. The following section will start with the assessment and implementation of the "correction factor" to account for the difference in how the bacterivory rates are calculated. We need this because we know/can count the entire population of HNANs (theoretically, given no microscopy limitations such as the difference in excitation between filters), while we don't know the entire population for the MNANs. As previously mentioned (in the introduction), we overestimate the amount of the bacteria per cell of MNANs as we can only identify MNANs with a microsphere in them. Therefore, we are going to have artifacts that are going to create differences between the indirect and direct when estimating bacterivory that wouldn't exist for primary production.
+
+However, I need to think if that then needs to change the bacterivory reported in the current version of the manuscript. This would not alter the values of the direct methods that are reported but would change the indirect measures and would create the need to redoing of both the tables and the figures that include these values. I will worry about that post calcualation.
+
+```{r bacterivory correction and KL div test}
+# df we are pulling data from: ant_community_final_PP_calc_grp
+# Check to see if the features of percentage of bacterivorous % for each (direct/indirect) were calculated and presented as separate variables or calculated mid C conversion.
+
+colnames(ant_community_final_PP_calc_grp)
+
+#Based off column names they were calculated mid Carbon calculation for mixotrophs but were calculated and saved as a separate feature for HNANs. I will now add these as features to use to create my "correction factor" (CF). The percent was never calculated for the population directly, but may have been included in one of the summary statistics in a prior chunk.
+
+# Pull the relevant features for correction factor evaluation.
+#Going to also pull the prior feature created to calculate the indirect effects initially as a calculation control...oringinal calc in line 2200
+bacterivory_correctionFactor_df <- select(ant_community_final_PP_calc_grp, depth,
+                                          ANAN_mL:HNAN_mL, mixo_act:hetero_act, hetero_act_percent_forfeed)
+
+# Create the features that will be used to estimate the CF
+bacterivory_correctionFactor_df <- mutate(bacterivory_correctionFactor_df, 
+                                  MNAN_direct_percentage = MNAN_mL/(MNAN_mL + HNAN_mL),
+                                  HNAN_direct_percentage = HNAN_mL/(MNAN_mL + HNAN_mL),
+                                  MNAN_indirect_percentage = (mixo_act+mixo_maybe_act)/(mixo_act + mixo_maybe_act + hetero_act),
+                                  HNAN_indirect_percentage = hetero_act/(mixo_act + mixo_maybe_act + hetero_act))
+
+
+#Initial summary statistics of new features
+summary(bacterivory_correctionFactor_df[,11:15])
+# The original calculation and this calculation give the exact same 
+
+#I am comparing the percent I calculated for the feeding estimate and the ratio now to ensure it was correct.
+bacterivory_correctionFactor_df[,c(11,15)]
+#Its fine
+
+#Now to calculate the actual Ratio of differences for each sample.
+bacterivory_correctionFactor_df_1 <- mutate(bacterivory_correctionFactor_df,
+                                            MNAN_method_ratio = MNAN_indirect_percentage/MNAN_direct_percentage,
+                                            MNAN_method_difference = MNAN_indirect_percentage - MNAN_direct_percentage)
+
+bacterivory_correctionFactor_df_1[,c(13,15,17)]
+
+#Plotting the trends of the for the Ratio differences
+ggplot(bacterivory_correctionFactor_df_1)+
+  geom_point(aes(station, MNAN_method_difference, color = depth))
+
+#I did all of these analysis with the grouped datasets. However, for a proper plot I would need the raw datasets to be able to get the SE for each of the means on the plot. Which means 
+
+ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC <- filter(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA, !station %in% c("N", "O","P","Q"), !depth == "Bucket") %>% mutate(MNAN_direct_percentage = MNAN_mL/(MNAN_mL + HNAN_mL),
+                                  HNAN_direct_percentage = HNAN_mL/(MNAN_mL + HNAN_mL),
+                                  MNAN_indirect_percentage = (mixo_act+mixo_maybe_act)/(mixo_act + mixo_maybe_act + hetero_act),
+                                  HNAN_indirect_percentage = hetero_act/(mixo_act + mixo_maybe_act + hetero_act),
+                                  MNAN_method_ratio = MNAN_indirect_percentage/MNAN_direct_percentage,
+                                  MNAN_method_difference_Bacterivorous = MNAN_indirect_percentage - MNAN_direct_percentage,
+                                  MNAN_method_difference_ALL = mixo_total_act_percent*100 - MNAN_percent,
+                                  HNAN_method_difference_ALL = hetero_act_percent*100 - HNAN_percent,
+                                  PNAN_method_difference_ALL = phyto_act_percent*100 - PNAN_percent,)
+
+#Adding a new group for the North/South/offshore to be added into the table
+ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC$Group_final <- with(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC, ifelse(Group == "Maguerite", "South",
+                                                                                                            ifelse(Group != "Maguerite" & Group != "Offshore", "North", "Offshore")))
+
+ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC_grp <- ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC %>% group_by(station, depth, Group_final) %>% select(station, depth, MNAN_method_difference_ALL) %>% summarise_if(is.numeric, .funs = list(mean = mean, sd = sd), na.rm = TRUE)
+
+ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC_grp_summaryDF <- ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC %>% group_by(Group_final) %>% select(station, depth, MNAN_method_difference_ALL,HNAN_method_difference_ALL,PNAN_method_difference_ALL) %>% summarise_if(is.numeric, .funs = list(mean = mean, sd = sd), na.rm = TRUE)
+
+ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC_grp_summaryDF
+
+MNAN_percent_diff_point_plot <- ggplot(filter(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC_grp, depth == "Surf"))+
+  geom_errorbar(aes(x = station, y = mean, ymin = mean - sd, ymax = mean +  sd, color = depth), position = position_nudge(x = -0.225), width = 0.45)+
+  geom_point(aes(x = station, y = mean, color = depth), position = position_nudge(-0.225))+
+  geom_errorbar(data = filter(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC_grp, depth == "DCM"),aes(x = station, y = mean, ymin = mean - sd, ymax = mean +  sd, color = depth), position = position_nudge(x = 0.225), width = 0.45)+
+  geom_point(data = filter(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC_grp,  depth == "DCM"), aes(x = station, y = mean, color = depth), position = position_nudge(0.225))+ 
+  ylab("")+ xlab("")+ labs(linetype = "Depth", color = "Functional Group")+scale_color_manual(values = c("green4","blue3"))+theme_bw()
+
+MNAN_percent_diff_point_plot
+
+ggsave("MNAN_percent_diff_point_plot.pdf", MNAN_percent_diff_point_plot, path = "/Users/christophercarnivale/Desktop/Dissertation_data/Antarctica_community_data/Manuscript_figures/")
+
+#The last thing needed is to add the correlation of the method measures to the supplemental.
+#I am going to check if it even matters first using a cor.test and then remake the figure
+
+#latitudinal and depth check of percentage diffference and ratio.
+
+#Latitude first
+cor.test(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC$latitude, ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC$MNAN_method_difference_ALL)
+
+cor.test(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC$latitude, ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC$MNAN_method_ratio)
+
+#Depth second
+cor.test(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC$depth_m, ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC$MNAN_method_difference_ALL)
+
+cor.test(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC$depth_m, ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC$MNAN_method_ratio)
+
+#latitudinal tests for all of the other groups
+cor.test(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC$latitude, ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC$HNAN_method_difference_ALL)
+cor.test(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC$latitude, ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC$PNAN_method_difference_ALL)
+
+#latitudinal tests for each of the proportions
+cor.test(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC$latitude, ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC$mixo_total_act_percent)
+
+cor.test(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC$latitude, ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC$hetero_act_percent)
+
+cor.test(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC$latitude, ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC$phyto_act_percent)
+#Means and sd of each of the groups for ease...I would calculate in a table but this is quicker
+mean(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC$MNAN_method_difference_ALL)
+mean(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC$HNAN_method_difference_ALL)
+mean(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC$PNAN_method_difference_ALL)
+
+sd(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC$MNAN_method_difference_ALL)
+sd(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC$HNAN_method_difference_ALL)
+sd(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC$PNAN_method_difference_ALL)
+
+mean(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC_grp$mean)
+
+mean(filter(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC_grp, Group_final == "North")$mean, na.rm = TRUE)
+
+mean(filter(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC_grp, Group_final == "North")$sd, na.rm = TRUE)
+
+mean(filter(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC_grp, Group_final == "South")$mean, na.rm = TRUE)
+
+mean(filter(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC_grp, Group_final == "South")$sd, na.rm = TRUE)
+
+mean(filter(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC_grp, Group_final == "Offshore")$mean, na.rm = TRUE)
+
+mean(filter(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA_BC_grp, Group_final == "Offshore")$sd, na.rm = TRUE)
 
 ```
 
-Jaccard similarity coefficient test:
+The idea for a correction was abandoned as this becomes much more circular and no longer a proper validation technique. The reasoning is actually very similar to the initial reasoning for the correction factor. However, if we apply and calculate a correction factor we would likely be engineering/mining for a significant result in our favor created by the correction factor. This could potentially cause a 
+##### Jaccard similarity coefficient test:
+Vegdist from the vegan package calculates the jaccard dissimilarity distance based off the 
 
 ```{r Jaccard similarity coefficient test}
+vegdist(MNAN_feeding_df, method = "jaccard")
+vegdist(HNAN_feeding_df, method = "jaccard")
 
+#If I want to convert the data it can't be zscore transformed as that creates 
+vegdist(MNAN_feeding_norm_df, method = "jaccard")
+vegdist(HNAN_feeding_norm_df, method = "jaccard")
 ```
 
-Biomass Estimate Validation:
+#####Biomass Estimate Validation:
+
+I will estimate the biomass based on the carbon estimte percell from menden-deuer and lessard 2000. The biomass estimated will then be compared to the estimated carbon acquired from each group to ensure what we estimate is within an expected range of biomass.
 
 ```{r Biomass Estimate Validation}
 #Biomass Validation test will be used using the estimated biovolumes of C content per cell from Menden-Deuer and Lessard 2000
 #Equation for C based on Volume for each group
 # log pgC per cell = log a + b * Vol (um^3)
-#OR y = a vol^b X log y = b log vol + log a, with y = pgC cell', b = slope, and a = y-intercept of the regression equation.
+#OR y = a vol^b --- log y = b log vol + log a, with y = pgC cell', b = slope, and a = y-intercept of the regression equation.
 # Using protists around <3000 um^3 ~ 9 um in radius
 #I will compare using both the less than 9 and greater than 9 considering much of the biomass was smaller and around 10-12 um in radius.
+# >3000 um: log a = -0.665 and b = 0.939
+# <3000 um: log a = -0.583 and b = 0.860
+# >3000 um: a = 10^-0.665 and b = 0.939
+# <3000 um: a = 10^-0.583 and b = 0.860
+#For volumes of each I could create a table with each to create a dataframe with avg radius and estimates of volume and pg C per cell for each one and then calculate based on each...but I will just start with the first one.
+#12 um = 7234.56
+#8 um = 2143.573 
 
+#These 
+
+#create dataframe with different estimates of average size in diameter:
+protist_avg_size_vector <- 5:15
+
+protist_avg_size_Cpercell_df <- as.data.frame(protist_avg_size_vector)
+protist_avg_size_Cpercell_df$volume <- ((protist_avg_size_Cpercell_df$protist_avg_size_vector/2)^3)*pi*4/3
+
+#For loop to add in the calculated pgC_percell for each avg size for tests
+for(row in 1:nrow(protist_avg_size_Cpercell_df)){if(protist_avg_size_Cpercell_df$volume[row]>3000){
+  protist_avg_size_Cpercell_df$pgCarbon_perCell[row] <- ((10^-0.665)*protist_avg_size_Cpercell_df$volume[row]^0.939)
+}
+  else{protist_avg_size_Cpercell_df$pgCarbon_perCell[row] <- ((10^-0.583)*protist_avg_size_Cpercell_df$volume[row]^0.860)}}
+
+#Now I have the pgC per cell...extend to the estimated cell densities on a per L basis.
+#All carbon estimates are in ug per L per day. Need to convert pg to ug and cells from ml to L
+
+#Create new column with conversion to ug per cell
+protist_avg_size_Cpercell_df$ugCarbon_perCell <- protist_avg_size_Cpercell_df$pgCarbon_perCell/1000000
+
+#I know have a df from which I can pull information and calculate the percent biomass of production for a range of avg NAN sizes since I don't have them documented. 
+
+#Calculation of the carbon biomass from each group by creating a new df with only the necessary information.
+
+ant_community_final_PP_calc_grp_DIVtest <- select(ant_community_final_PP_calc_grp, depth, MNAN_C_removed, HNAN_C_removed, mixo_act_feeding_redo, hetero_act_feeding_C_redo, HNAN_mL, MNAN_mL, PNAN_mL, Phyto_PP, Mixo_PP_potential)
+
+#calculate the biomass of each from estimates to then compare to the estimated  
+ant_community_final_PP_calc_grp_DIVtest$MNAN_biomass_L <- ant_community_final_PP_calc_grp_DIVtest$MNAN_mL*1000*protist_avg_size_Cpercell_df[10,4]
+
+ant_community_final_PP_calc_grp_DIVtest$HNAN_biomass_L <- ant_community_final_PP_calc_grp_DIVtest$HNAN_mL*1000*protist_avg_size_Cpercell_df[10,4]
+
+ant_community_final_PP_calc_grp_DIVtest$PNAN_biomass_L <- ant_community_final_PP_calc_grp_DIVtest$PNAN_mL*1000*protist_avg_size_Cpercell_df[10,4]
 ```
+###### Biomass Validation Summary
+
+In all cases except assuming the average protist is at its lowest size (5 um radius), the amount of production of total Carbon is almost always smaller than the amount of carbon biomass estimated for each group. Even then, the carbon only barely surpass the MNAN biomass and is not a concern. This means that the carbon estimates are both in range of what has been previously reported but also within range of what is possible given the available biomass from each group and can be used in analysis.
 
 
 ```{r Percent Read Frequency Bar plot}
@@ -3552,8 +3893,8 @@ Mixo_percent_carbon_PPandHeterodf_noredun_PPpenalty <- filter(Mixo_percent_carbo
 
 DCM_filter <- filter(Mixo_percent_carbon_PPandHeterodf_noredun, depth == "DCM")
 Surf_filter <- filter(Mixo_percent_carbon_PPandHeterodf_noredun, depth == "Surf")
-North_filter <- filter(Mixo_percent_carbon_PPandHeterodf_noredun, Group != "Maguerite")
-South_filter <- filter(Mixo_percent_carbon_PPandHeterodf_noredun, Group == "Maguerite")
+North_filter <- filter(Mixo_percent_carbon_PPandHeterodf_noredun, Group_final != "Maguerite")
+South_filter <- filter(Mixo_percent_carbon_PPandHeterodf_noredun, Group_final == "Maguerite")
 
 #Converting the flextables into regular dataframe objects and then combining in the proper format for JD to perform the PCoA analysis.
 
@@ -3654,5 +3995,61 @@ colnames(MNAN_bacterivory_percent_CB_vector_fix) <- c("Bacterivory_Percent_PPpen
 Mixo_percent_carbon_PPandHeterodf_table_filt_fix_df <- cbind(Mixo_percent_carbon_PPandHeterodf_table_filt_fix,MNAN_bacterivory_percent_CB_vector_fix)
 
 write.csv(Mixo_percent_carbon_PPandHeterodf_table_filt_fix_df, "/Users/christophercarnivale/Desktop/Dissertation_data/Antarctica_community_data/Manuscript_figures/Mixo_percent_carbon_PPandHeterodf_table_filt_fix_df.csv")
+```
+
+```{r Remaking figures with edits...easier to add onto end for now}
+ant_community_final_PP_calc_grp_final <- filter(ant_community_final_PP_calc_PCA_filter_bacbiomass_WstA, !station %in% c("N", "O","P","Q"), !depth == "Bucket") %>% group_by(Group, station, depth) %>% summarise_if(is.numeric, .funs = list(mean = ~mean(., na.rm = TRUE), sd = ~sd(.,na.rm = TRUE)/sqrt(3)))
+
+# Remaking the plots for all of the figures that were boxplots
+
+#Figure 3A - MNAN_C_removed_mean/sd
+
+Mixo_figure_3A <- ggplot(ant_community_final_PP_calc_grp_final)+
+  geom_point(aes(x = station, y = MNAN_C_removed_mean, color = depth))+
+  geom_errorbar(aes(x = station, ymin = MNAN_C_removed_mean-MNAN_C_removed_sd, ymax = MNAN_C_removed_mean+MNAN_C_removed_sd))+scale_color_manual(values = c("#CCCAD0","#809A89"))
+
+
+MNAN_only_activity_ggarrange_noRead_noBOX <- ggarrange(Mixo_figure_3A,MNAN_PP_potential_plot, ncol = 2, nrow = 1, common.legend = TRUE, legend = "bottom")
+
+ggsave("Mixo_figure_3A.pdf", plot = Mixo_figure_3A, path = "/Users/christophercarnivale/Desktop/Dissertation_data/Antarctica_community_data/Manuscript_figures/")
+
+ggsave("MNAN_only_activity_ggarrange_noRead_noBOX.pdf", plot = MNAN_only_activity_ggarrange_noRead_noBOX, path = "/Users/christophercarnivale/Desktop/Dissertation_data/Antarctica_community_data/Manuscript_figures/")
+
+# Fixing the supplemental plots
+# Changing HNAN remove C to a point polot
+Mixo_figure_S1A <- ggplot(ant_community_final_PP_calc_grp_final)+
+  geom_point(aes(x = station, y = HNAN_C_removed_mean, color = depth))+
+  geom_errorbar(aes(x = station, ymin = HNAN_C_removed_mean-HNAN_C_removed_sd, ymax = HNAN_C_removed_mean+MNAN_C_removed_sd))+scale_color_manual(values = c("#CCCAD0","#809A89"))
+
+HNAN_PNAN_activity_ggarrange_noBOX <- ggarrange(Mixo_figure_S1A ,PNAN_PP_plot, nrow = 1, ncol = 2, common.legend = TRUE, legend = "bottom")
+
+ggsave("HNAN_PNAN_activity_ggarrange_noBOX.pdf", plot = HNAN_PNAN_activity_ggarrange_noBOX, path = "/Users/christophercarnivale/Desktop/Dissertation_data/Antarctica_community_data/Manuscript_figures/")
+
+# Remaking figure S3...percent of bprod consumed
+Mixo_figure_S3A <- ggplot(filter(ant_community_final_PP_calc_grp_final,!(station == "G" & depth == "DCM")))+
+  geom_point(aes(x = station, y = MNAN_percent_bprod_removed_mean, color = depth))+
+  geom_errorbar(aes(x = station, ymin = MNAN_percent_bprod_removed_mean-MNAN_percent_bprod_removed_sd, ymax = MNAN_percent_bprod_removed_mean+MNAN_percent_bprod_removed_sd))+scale_color_manual(values = c("#CCCAD0","#809A89"))+ylim(0,300)
+
+Mixo_figure_S3B <- ggplot(filter(ant_community_final_PP_calc_grp_final,!(station == "G" & depth == "DCM")))+
+  geom_point(aes(x = station, y = HNAN_percent_bprod_removed_mean, color = depth))+
+  geom_errorbar(aes(x = station, ymin = HNAN_percent_bprod_removed_mean-HNAN_percent_bprod_removed_sd, ymax = HNAN_percent_bprod_removed_mean+HNAN_percent_bprod_removed_sd))+scale_color_manual(values = c("#CCCAD0","#809A89"))+ylim(0,300)
+
+Mixo_Figure_S3_ggarrange <- ggarrange(Mixo_figure_S3A ,Mixo_figure_S3B, nrow = 1, ncol = 2, common.legend = TRUE, legend = "bottom")
+
+ggsave("Mixo_Figure_S3_ggarrange.pdf", plot = Mixo_Figure_S3_ggarrange, path = "/Users/christophercarnivale/Desktop/Dissertation_data/Antarctica_community_data/Manuscript_figures/")
+
+# Remaking figure S4 %SS removed
+Mixo_figure_S4A <- ggplot(ant_community_final_PP_calc_grp_final)+
+  geom_point(aes(x = station, y = MNAN_SS_perday_mean, color = depth))+
+  geom_errorbar(aes(x = station, ymin = MNAN_SS_perday_mean-MNAN_SS_perday_sd, ymax = MNAN_SS_perday_mean+MNAN_SS_perday_sd))+scale_color_manual(values = c("#CCCAD0","#809A89"))
+
+Mixo_figure_S4B <- ggplot(ant_community_final_PP_calc_grp_final)+
+  geom_point(aes(x = station, y = HNAN_SS_perday_mean, color = depth))+
+  geom_errorbar(aes(x = station, ymin = HNAN_SS_perday_mean-HNAN_SS_perday_sd, ymax = HNAN_SS_perday_mean+HNAN_SS_perday_sd))+scale_color_manual(values = c("#CCCAD0","#809A89"))+ylim(0,40)
+
+
+Mixo_Figure_S4_ggarrange <- ggarrange(Mixo_figure_S4A ,Mixo_figure_S4B, nrow = 1, ncol = 2, common.legend = TRUE, legend = "bottom")
+
+ggsave("Mixo_Figure_S4_ggarrange.pdf", plot = Mixo_Figure_S4_ggarrange, path = "/Users/christophercarnivale/Desktop/Dissertation_data/Antarctica_community_data/Manuscript_figures/")
 ```
 
